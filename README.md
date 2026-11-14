@@ -1,58 +1,92 @@
-# Salesforce DX Project
+# GiveBridge
 
-Salesforce DX is a development approach that brings source-driven development, team collaboration, and continuous integration to the Salesforce Platform. Instead of working directly in an org through a web browser, you work with metadata as source files in a local DX project, track changes in version control, and deploy through automated processes.
+A small Salesforce project that lets a nonprofit's donation website send gifts into Salesforce safely: no duplicate donors, no duplicate gifts, and clear errors when data is wrong.
 
-This project template gets you started with the tools and structure you need to build Salesforce applications using source control, scratch orgs, and the Salesforce CLI.
+Built as a learning project for a Salesforce developer internship. The client scenario is fictional.
 
-## Prerequisites
+## The problem
 
-Before you start, make sure you have:
+A nonprofit receives donations in MAD, EUR and USD from a website. The fundraising team needs, for each donor:
 
-- **Salesforce CLI** - Download from [developer.salesforce.com/tools/salesforcecli](https://developer.salesforce.com/tools/salesforcecli). See [Install Salesforce CLI](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_install_cli.htm) for details.
-- **VS Code with Salesforce Extension Pack** - See [Installation Instructions](https://developer.salesforce.com/docs/platform/sfvscode-extensions/guide/install.html) for details. Includes the Agentforce Vibes extension.
-- **A development org** - Sign up for a free Developer Edition org [here](https://developer.salesforce.com/signup).
-- **Dev Hub enabled** (optional, required to create scratch orgs) - You can enable Dev Hub in your development org under Setup > Dev Hub.  See [Provide Developers Access to Salesforce DX Tools](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_setup_dx_tools.htm).
+- how much they gave in total (in one currency)
+- how many gifts
+- when they last gave
+- a simple donor level
 
-## Project Structure
+If the website sends the same donation twice, or the same donor gives again, the data must stay clean.
 
-Your DX project follows this structure:
+## How it works
 
-- **`force-app/main/default/`** - Your metadata source files live in this default package directory. You can configure additional package directories in the `sfdx-project.json` file.
-- **`config/`** - Scratch org definitions and project settings
-- **`scripts/`** - Automation scripts for common tasks
-- **`sfdx-project.json`** - Project manifest that defines package directories, namespace, API version, and other project-level settings
+```
+Website  →  REST endpoint  →  Service  →  Selectors  →  Salesforce data
+            (HTTP only)      (rules)     (queries)
+```
 
-See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm).
+| Piece | Job |
+|---|---|
+| `GiftRestResource` | Receives `POST /services/apexrest/gifts`, returns 201, 200 or 400 |
+| `GiftService` | Validates, finds or creates the donor, upserts gifts. Bulk-safe |
+| `ContactSelector`, `GiftSelector` | Hold all the SOQL queries |
 
-## Get Started
+### Example request
 
-Ready to start developing? The [Get Started with Salesforce DX](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_get_started_dx.htm) guide walks you through your first project, from creating a scratch org to creating a simple Apex class or LWC to deploying your code to a sandbox.
+```json
+[{
+  "webGiftId": "WEB-1001",
+  "donorEmail": "amina@example.com",
+  "donorFirstName": "Amina",
+  "donorLastName": "Benali",
+  "originalAmount": 500,
+  "originalCurrency": "MAD",
+  "giftDate": "2026-11-10"
+}]
+```
 
-## Common Salesforce CLI Commands
+| Response | Meaning |
+|---|---|
+| `201` | At least one new gift was created |
+| `200` | Every gift already existed, nothing duplicated (safe retry) |
+| `400` | Bad data, with a JSON error message |
 
-Here are common CLI commands that you'll use the most:
+## Data model
 
-- `sf org login web`: Authorize an org
-- `sf org open`: Open your org in a browser
-- `sf org create scratch`: Create a scratch org
-- `sf project deploy start`: Deploy metadata to your org
-- `sf project retrieve start`: Retrieve metadata from your org
-- `sf template generate <artifact>`: Scaffold new components, such as Apex classes and triggers, LWC components, Lightning apps, and more
-- `sf apex <command>`: Run Apex tests, run anonymous Apex blocks, and view logs
-- `sf data <command>`: Work with test data
-- `sf alias <command>`: Manage org aliases
-- `sf config <command>`: Configure CLI settings
+- **Gift__c** (auto number `G-0001`): Donor (master-detail to Contact), Amount USD, Original Amount, Original Currency (MAD/EUR/USD), Gift Date, Web Gift Id (external ID, unique)
+- **Contact** gets 3 roll-up summary fields (Total Given, Gift Count, Last Gift Date) and a Donor Level formula (Major, Regular, New, Prospect)
 
-## Use Agentforce Vibes to Build Lightning Apps
+Roll-ups and the formula are declarative on purpose: no code is needed to total gifts.
 
-Transform your ideas into custom Lightning apps that extend CRM workflows directly in Lightning Experience. Through natural conversations with Agentforce Vibes, implement custom objects and fields, complex business logic, and dynamic UI components. See [Build a Lightning App Using Agentforce Vibes](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/lexapp-overview.html).
+## Design decisions
 
-## Additional Resources
+1. **Two amount fields.** Amount USD is used for every total. Original Amount and Original Currency keep what the donor really gave. One field would add MAD, EUR and USD together into a meaningless number.
+2. **Donor is master-detail.** A gift cannot exist without a donor, and it enables roll-up summaries.
+3. **Upsert on an external ID** (`Web_Gift_Id__c`). If the website retries a request, the gift is updated, not duplicated.
+4. **Service and selectors are separate** from the REST class. The HTTP layer can change without touching the business logic.
+5. **Bulk-safe.** A request of 100 gifts uses the same number of queries as 1. A test checks this.
+6. **User mode.** Queries and DML respect the running user's permissions (`WITH USER_MODE`, `as user`).
 
-- [Agentforce Vibes Developer Guide](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/einstein-overview.html)
-- [Salesforce CLI Installation Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/)
-- [Salesforce CLI Plugin Development Guide](https://developer.salesforce.com/docs/platform/salesforce-cli-plugin/guide/conceptual-overview.html)
-- [Salesforce VS Code Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
+## Tests
 
+10 Apex tests, all passing:
+
+- `GiftServiceTest`: new donor, existing donor (case-insensitive email), repeated gift, bad amount, 100 gifts within limits
+- `GiftRestResourceTest`: 201, 200, 400 for bad amount, bad JSON, empty body
+
+## Run it yourself
+
+```bash
+sf project deploy start --target-org <your-org-alias>
+sf apex run test --target-org <your-org-alias> --synchronous
+```
+
+## Known limits
+
+- Exchange rates are fixed demo values in `GiftService`. A real version would use live rates or store the rate used on each gift.
+- A gift cannot move to a different donor (master-detail). Re-sending a Web Gift Id with another email fails.
+- The endpoint has no authentication layer beyond standard Salesforce API access.
+
+## Roadmap
+
+- [ ] Validation rules on Gift (positive amount, no future date, currency required)
+- [ ] Flow, permission sets, Gifts tab and GiveBridge app
+- [ ] Discovery notes (`docs/discovery.md`)
+- [ ] Lightning web component: donor summary and recent gifts
