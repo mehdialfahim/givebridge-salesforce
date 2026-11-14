@@ -5,6 +5,14 @@
 // You can also execute the entire file by running the command:
 //     SFDX: Execute Anonymous Apex with Editor Contents
 
-string tempvar = 'Enter_your_name_here';
-System.debug('Hello World!');
-System.debug('My name is ' + tempvar);
+RestRequest req = new RestRequest();
+req.requestUri = '/services/apexrest/gifts';
+req.httpMethod = 'POST';
+req.requestBody = Blob.valueOf('[{"webGiftId":"WEB-1001","donorEmail":"amina@example.com","donorFirstName":"Amina","donorLastName":"Benali","originalAmount":-5,"originalCurrency":"MAD","giftDate":"2026-11-10"}]');
+RestContext.request = req;
+RestContext.response = new RestResponse();
+
+GiftRestResource.doPost();
+
+System.debug('STATUS: ' + RestContext.response.statusCode);
+System.debug('BODY: ' + RestContext.response.responseBody.toString());
