@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Donor_Level_API_name_Donor_Level_c__c</fullName>
+    <externalId>false</externalId>
+    <formula>IF(Total_Given__c &gt;= 1000, &quot;Major&quot;,
+IF(Total_Given__c &gt;= 250, &quot;Regular&quot;,
+IF(Gift_Count__c &gt;= 1, &quot;New&quot;, &quot;Prospect&quot;)))</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Donor Level (API name Donor_Level__c)</label>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
