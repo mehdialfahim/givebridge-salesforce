@@ -11,4 +11,14 @@ public with sharing class GiftSelector {
         }
         return result;
     }
+        public static List<Gift__c> recentByDonor(Id donorId, Integer limitSize) {
+        return [
+            SELECT Id, Name, Amount_USD__c, Original_Amount__c, Original_Currency__c, Gift_Date__c
+            FROM Gift__c
+            WHERE Donor__c = :donorId
+            WITH USER_MODE
+            ORDER BY Gift_Date__c DESC
+            LIMIT :limitSize
+        ];
+    }
 }

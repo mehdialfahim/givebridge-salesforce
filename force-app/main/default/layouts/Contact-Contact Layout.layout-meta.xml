@@ -53,7 +53,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
-                <field>Donor_Level_API_name_Donor_Level_c__c</field>
+                <field>Donor_Level__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>

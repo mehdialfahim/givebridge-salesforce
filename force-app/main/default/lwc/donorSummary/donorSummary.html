@@ -1,0 +1,67 @@
+<template>
+    <lightning-card title="Donor Summary" icon-name="standard:contact">
+        <div class="slds-var-p-horizontal_medium">
+            <template lwc:if={hasError}>
+                <p class="slds-text-color_error">Could not load donor data.</p>
+            </template>
+            <template lwc:else>
+                <div class="slds-grid slds-wrap slds-var-m-bottom_medium">
+                    <div class="slds-col slds-size_1-of-2 slds-var-p-bottom_small">
+                        <p class="slds-text-title">Total Given</p>
+                        <p class="slds-text-heading_medium">
+                            <lightning-formatted-number
+                                value={totalGiven}
+                                format-style="currency"
+                                currency-code="USD"
+                            ></lightning-formatted-number>
+                        </p>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-var-p-bottom_small">
+                        <p class="slds-text-title">Donor Level</p>
+                        <p class="slds-text-heading_medium">{donorLevel}</p>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <p class="slds-text-title">Gift Count</p>
+                        <p class="slds-text-heading_small">{giftCount}</p>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <p class="slds-text-title">Last Gift Date</p>
+                        <p class="slds-text-heading_small">
+                            <lightning-formatted-date-time
+                                value={lastGiftDate}
+                                year="numeric"
+                                month="short"
+                                day="2-digit"
+                                time-zone="UTC"
+                            ></lightning-formatted-date-time>
+                        </p>
+                    </div>
+                </div>
+
+                <p class="slds-text-title slds-var-m-bottom_x-small">Recent gifts</p>
+                <template lwc:if={hasGifts}>
+                    <ul class="slds-has-dividers_bottom-space slds-var-m-bottom_medium">
+                        <template for:each={gifts.data} for:item="gift">
+                            <li key={gift.Id} class="slds-item">
+                                <p class="slds-text-body_regular">
+                                    {gift.Name}:
+                                    <lightning-formatted-number
+                                        value={gift.Amount_USD__c}
+                                        format-style="currency"
+                                        currency-code="USD"
+                                    ></lightning-formatted-number>
+                                </p>
+                                <p class="slds-text-body_small slds-text-color_weak">
+                                    {gift.Original_Amount__c} {gift.Original_Currency__c}
+                                </p>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+                <template lwc:else>
+                    <p class="slds-var-m-bottom_medium">No gifts yet.</p>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>
